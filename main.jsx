@@ -2,36 +2,96 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactDOM from "react-dom/client";
 
 const PRODUCTS = [
+  const PRODUCTS = [
+  // Kahvaltı
   { tr: "süt", nl: "melk", emoji: "🥛", category: "Kahvaltı" },
-  { tr: "ekmek", nl: "brood", emoji: "🍞", category: "Ekmek/Fırın" },
+  { tr: "yoğurt", nl: "yoghurt", emoji: "🥣", category: "Kahvaltı" },
   { tr: "yumurta", nl: "eieren", emoji: "🥚", category: "Kahvaltı" },
   { tr: "peynir", nl: "kaas", emoji: "🧀", category: "Kahvaltı" },
-  { tr: "yoğurt", nl: "yoghurt", emoji: "🥣", category: "Kahvaltı" },
+  { tr: "kaşar", nl: "kaas", emoji: "🧀", category: "Kahvaltı" },
+  { tr: "tereyağı", nl: "boter", emoji: "🧈", category: "Kahvaltı" },
+  { tr: "zeytin", nl: "olijven", emoji: "🫒", category: "Kahvaltı" },
+  { tr: "bal", nl: "honing", emoji: "🍯", category: "Kahvaltı" },
+  { tr: "reçel", nl: "jam", emoji: "🍓", category: "Kahvaltı" },
+  { tr: "çikolata kreması", nl: "chocopasta", emoji: "🍫", category: "Kahvaltı" },
 
+  // Ekmek/Fırın
+  { tr: "ekmek", nl: "brood", emoji: "🍞", category: "Ekmek/Fırın" },
+  { tr: "tost ekmeği", nl: "toastbrood", emoji: "🍞", category: "Ekmek/Fırın" },
+  { tr: "lavaş", nl: "wrap", emoji: "🌯", category: "Ekmek/Fırın" },
+  { tr: "simit", nl: "bagel", emoji: "🥯", category: "Ekmek/Fırın" },
+  { tr: "croissant", nl: "croissant", emoji: "🥐", category: "Ekmek/Fırın" },
+
+  // Sebze/Meyve
   { tr: "elma", nl: "appel", emoji: "🍎", category: "Sebze/Meyve" },
   { tr: "muz", nl: "banaan", emoji: "🍌", category: "Sebze/Meyve" },
   { tr: "domates", nl: "tomaat", emoji: "🍅", category: "Sebze/Meyve" },
   { tr: "patates", nl: "aardappel", emoji: "🥔", category: "Sebze/Meyve" },
+  { tr: "soğan", nl: "ui", emoji: "🧅", category: "Sebze/Meyve" },
+  { tr: "havuç", nl: "wortel", emoji: "🥕", category: "Sebze/Meyve" },
   { tr: "salatalık", nl: "komkommer", emoji: "🥒", category: "Sebze/Meyve" },
   { tr: "limon", nl: "citroen", emoji: "🍋", category: "Sebze/Meyve" },
-  { tr: "brokoli", nl: "broccoli", emoji: "🥦", category: "Sebze/Meyve", aliases: ["brocoli", "broccoli"] },
+  { tr: "brokoli", nl: "broccoli", emoji: "🥦", category: "Sebze/Meyve", aliases: ["brocoli"] },
+  { tr: "marul", nl: "sla", emoji: "🥬", category: "Sebze/Meyve" },
+  { tr: "ıspanak", nl: "spinazie", emoji: "🥬", category: "Sebze/Meyve" },
+  { tr: "biber", nl: "paprika", emoji: "🌶️", category: "Sebze/Meyve" },
+  { tr: "mandalina", nl: "mandarijn", emoji: "🍊", category: "Sebze/Meyve" },
+  { tr: "portakal", nl: "sinaasappel", emoji: "🍊", category: "Sebze/Meyve" },
+  { tr: "çilek", nl: "aardbei", emoji: "🍓", category: "Sebze/Meyve" },
+  { tr: "üzüm", nl: "druiven", emoji: "🍇", category: "Sebze/Meyve" },
+  { tr: "karpuz", nl: "watermeloen", emoji: "🍉", category: "Sebze/Meyve" },
+  { tr: "avokado", nl: "avocado", emoji: "🥑", category: "Sebze/Meyve" },
 
+  // Et/Tavuk
   { tr: "tavuk", nl: "kip", emoji: "🍗", category: "Et" },
   { tr: "kıyma", nl: "gehakt", emoji: "🥩", category: "Et" },
   { tr: "et", nl: "vlees", emoji: "🥩", category: "Et" },
-  { tr: "sucuk", nl: "Turkse worst", emoji: "🌭", category: "Türk market" },
+  { tr: "köfte", nl: "gehaktbal", emoji: "🍖", category: "Et" },
+  { tr: "balık", nl: "vis", emoji: "🐟", category: "Et" },
+  { tr: "somon", nl: "zalm", emoji: "🐟", category: "Et" },
+  { tr: "sucuk", nl: "turkse worst", emoji: "🌭", category: "Türk market" },
 
-  { tr: "un", nl: "bloem", emoji: "🌾", category: "Kuru gıda" },
+  // Kuru gıda
   { tr: "pirinç", nl: "rijst", emoji: "🍚", category: "Kuru gıda" },
   { tr: "makarna", nl: "pasta", emoji: "🍝", category: "Kuru gıda" },
   { tr: "bulgur", nl: "bulgur", emoji: "🌾", category: "Kuru gıda" },
   { tr: "nohut", nl: "kikkererwten", emoji: "🫘", category: "Kuru gıda" },
-  { tr: "tuz", nl: "zout", emoji: "🧂", category: "Kuru gıda" },
+  { tr: "mercimek", nl: "linzen", emoji: "🫘", category: "Kuru gıda" },
+  { tr: "fasulye", nl: "bonen", emoji: "🫘", category: "Kuru gıda" },
+  { tr: "un", nl: "bloem", emoji: "🌾", category: "Kuru gıda" },
   { tr: "şeker", nl: "suiker", emoji: "🧂", category: "Kuru gıda" },
+  { tr: "tuz", nl: "zout", emoji: "🧂", category: "Kuru gıda" },
+  { tr: "çay", nl: "thee", emoji: "🫖", category: "Kuru gıda" },
+  { tr: "kahve", nl: "koffie", emoji: "☕", category: "Kuru gıda" },
 
+  // İçecek
+  { tr: "su", nl: "water", emoji: "💧", category: "İçecek" },
+  { tr: "meyve suyu", nl: "sap", emoji: "🧃", category: "İçecek" },
+  { tr: "ayran", nl: "ayran", emoji: "🥛", category: "İçecek" },
+  { tr: "kola", nl: "cola", emoji: "🥤", category: "İçecek" },
+  { tr: "ice tea", nl: "ice tea", emoji: "🧋", category: "İçecek" },
+
+  // Atıştırmalık
+  { tr: "cips", nl: "chips", emoji: "🍟", category: "Atıştırmalık" },
+  { tr: "çikolata", nl: "chocolade", emoji: "🍫", category: "Atıştırmalık" },
+  { tr: "bisküvi", nl: "koekjes", emoji: "🍪", category: "Atıştırmalık" },
+  { tr: "kraker", nl: "crackers", emoji: "🥨", category: "Atıştırmalık" },
+
+  // Temizlik
   { tr: "deterjan", nl: "wasmiddel", emoji: "🧼", category: "Temizlik" },
+  { tr: "bulaşık deterjanı", nl: "afwasmiddel", emoji: "🧴", category: "Temizlik" },
+  { tr: "çöp poşeti", nl: "vuilniszak", emoji: "🗑️", category: "Temizlik" },
   { tr: "tuvalet kağıdı", nl: "wc papier", emoji: "🧻", category: "Temizlik" },
-  { tr: "ıslak mendil", nl: "natte doekjes", emoji: "🧴", category: "Yalın için" },
+  { tr: "kağıt havlu", nl: "keukenpapier", emoji: "🧻", category: "Temizlik" },
+  { tr: "ıslak mendil", nl: "natte doekjes", emoji: "🧴", category: "Temizlik" },
+  { tr: "şampuan", nl: "shampoo", emoji: "🧴", category: "Temizlik" },
+  { tr: "sabun", nl: "zeep", emoji: "🧼", category: "Temizlik" },
+
+  // Yalın için
+  { tr: "bebek bezi", nl: "luier", emoji: "👶", category: "Yalın için" },
+  { tr: "meyve püresi", nl: "fruit puree", emoji: "🍎", category: "Yalın için" },
+  { tr: "çocuk yoğurdu", nl: "kinder yoghurt", emoji: "🥣", category: "Yalın için" },
+];
 ];
 
 const MARKETS = ["Tümü", "Fark etmez", "Albert Heijn", "Jumbo", "PLUS", "Nettorama", "Türk marketi"];
