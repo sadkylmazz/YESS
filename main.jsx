@@ -1,6 +1,99 @@
 import React, { useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom/client";
 
+const knownProducts = [
+  "süt", "sut", "melk", "ekmek", "brood", "yumurta", "eieren", "peynir", "kaas",
+  "domates", "tomaat", "patates", "aardappel", "limon", "tuz", "şeker", "suiker",
+  "un", "bloem", "pirinç", "rijst", "makarna", "pasta", "tavuk", "kip",
+  "kıyma", "gehakt", "et", "vlees", "salatalık", "komkommer", "muz", "banaan",
+  "elma", "appel", "yoğurt", "yoghurt", "deterjan", "wasmiddel", "peçete",
+  "wc papier", "tuvalet kağıdı", "zeytin", "sucuk", "ayran", "bulgur", "nohut"
+];
+
+const markets = ["jumbo", "albert heijn", "ah", "plus", "nettorama", "türk market", "turk market"];
+
+function normalizeWord(word) {
+  const map = {
+    sut: "süt",
+    melk: "süt",
+    brood: "ekmek",
+    tomaat: "domates",
+    aardappel: "patates",
+    banaan: "muz",
+    appel: "elma",
+    yoghurt: "yoğurt",
+    kaas: "peynir",
+    kip: "tavuk",
+    gehakt: "kıyma",
+    wasmiddel: "deterjan",
+    suiker: "şeker",
+    bloem: "un",
+    rijst: "pirinç",
+    pasta: "makarna"
+  };
+
+  return map[word.toLowerCase()] || word;
+}
+
+function detectMarket(text) {
+  const lower = text.toLowerCase();
+
+  if (lower.includes("jumbo")) return "Jumbo";
+  if (lower.includes("albert heijn") || lower.includes(" ah ")) return "Albert Heijn";
+  if (lower.includes("plus")) return "PLUS";
+  if (lower.includes("nettorama")) return "Nettorama";
+  if (lower.includes("türk market") || lower.includes("turk market")) return "Türk marketi";
+
+  return "Fark etmez";
+}
+
+function smartParse(text) {
+  let cleaned = text.toLowerCase();
+
+  markets.forEach((m) => {
+    cleaned = cleaned.replaceAll(m, "");
+  });
+
+  cleaned = cleaned
+    .replaceAll("jumbo'dan", "")
+    .replaceAll("jumbodan", "")
+    .replaceAll("ah'den", "")
+    .replaceAll("albert heijn'den", "")
+    .replaceAll("türk marketten", "")
+    .replaceAll("turk marketten", "")
+    .replaceAll(" ve ", " , ")
+    .replaceAll(" ayrıca ", " , ")
+    .replaceAll(" sonra ", " , ")
+    .replaceAll(" falan filan", "")
+    .replaceAll(" falan", "")
+    .replaceAll(".", ",")
+    .replaceAll(";", ",");
+
+  const words = cleaned.split(/\s+/).filter(Boolean);
+  const found = [];
+
+  for (let i = 0; i < words.length; i++) {
+    let word = words[i].replace(/[,.]/g, "");
+    let twoWords = `${word} ${words[i + 1] || ""}`.trim();
+
+    if (knownProducts.includes(twoWords)) {
+      found.push(normalizeWord(twoWords));
+      i++;
+    } else if (knownProducts.includes(word)) {
+      found.push(normalizeWord(word));
+    }
+  }
+
+  if (found.length > 0) {
+    return [...new Set(found)];
+  }
+
+  return cleaned
+    .split(",")
+    .map((x) => x.trim())
+    .filter(Boolean);
+}
+
 function App() {
   const [items, setItems] = useState(() => {
     const saved = localStorage.getItem("yess-list");
@@ -16,48 +109,32 @@ function App() {
     localStorage.setItem("yess-list", JSON.stringify(items));
   }, [items]);
 
-  function makeSmartList(sentence) {
-    return sentence
-      .toLowerCase()
-      .replaceAll(" ve ", ",")
-      .replaceAll(" ayrıca ", ",")
-      .replaceAll(" sonra ", ",")
-      .replaceAll(" bir kilo ", " 1 kg ")
-      .replaceAll(" iki kilo ", " 2 kg ")
-      .replaceAll(" üç kilo ", " 3 kg ")
-      .replaceAll(" bir paket ", " 1 paket ")
-      .replaceAll(" iki paket ", " 2 paket ")
-      .split(",")
-      .map((x) => x.trim())
-      .filter(Boolean);
-  }
-
-  function addItem(name) {
+  function addItem(name, market = "Fark etmez") {
     if (!name.trim()) return;
 
     setItems((prev) => [
       {
         id: Date.now() + Math.random(),
         name: name.trim(),
-        done: false,
+        market,
+        done: false
       },
-      ...prev,
+      ...prev
     ]);
   }
 
   function addManual() {
-    addItem(text);
+    const market = detectMarket(text);
+    const products = smartParse(text);
+    products.forEach((p) => addItem(p, market));
     setText("");
   }
 
   function startListening() {
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      alert(
-        "Bu tarayıcı mikrofonla yazıya çevirme desteklemiyor. iPhone Safari’de çalışmayabilir. Chrome ile dene."
-      );
+      alert("Bu tarayıcı mikrofon algılamayı desteklemiyor. Chrome ile dene.");
       return;
     }
 
@@ -73,49 +150,38 @@ function App() {
 
     recognition.onresult = (event) => {
       let transcript = "";
-
       for (let i = 0; i < event.results.length; i++) {
         transcript += event.results[i][0].transcript + " ";
       }
-
       setSpokenText(transcript.trim());
     };
 
     recognition.onerror = () => {
       setListening(false);
-      alert("Mikrofon çalışmadı. Tarayıcıdan mikrofon iznini kontrol et.");
+      alert("Mikrofon çalışmadı. Mikrofon iznini kontrol et.");
     };
 
-    recognition.onend = () => {
-      setListening(false);
-    };
+    recognition.onend = () => setListening(false);
 
     recognitionRef.current = recognition;
     recognition.start();
   }
 
   function stopListening() {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-    }
-
+    recognitionRef.current?.stop();
     setListening(false);
   }
 
   function convertVoiceToList() {
-    if (!spokenText.trim()) return;
+    const market = detectMarket(spokenText);
+    const products = smartParse(spokenText);
 
-    const products = makeSmartList(spokenText);
-    products.forEach((product) => addItem(product));
+    products.forEach((p) => addItem(p, market));
     setSpokenText("");
   }
 
   function toggleItem(id) {
-    setItems(
-      items.map((item) =>
-        item.id === id ? { ...item, done: !item.done } : item
-      )
-    );
+    setItems(items.map((item) => item.id === id ? { ...item, done: !item.done } : item));
   }
 
   function deleteItem(id) {
@@ -123,139 +189,46 @@ function App() {
   }
 
   return (
-    <div
-      style={{
-        fontFamily: "Arial",
-        padding: 20,
-        background: "#f5f5f5",
-        minHeight: "100vh",
-      }}
-    >
+    <div style={{ fontFamily: "Arial", padding: 20, background: "#f5f5f5", minHeight: "100vh" }}>
       <h1>YESS</h1>
       <p>Yalın • Ece • Sadık</p>
 
-      <button
-        onClick={listening ? stopListening : startListening}
-        style={{
-          width: "100%",
-          padding: 18,
-          borderRadius: 14,
-          border: "none",
-          background: listening ? "#b91c1c" : "black",
-          color: "white",
-          fontSize: 18,
-          marginBottom: 10,
-        }}
-      >
+      <button onClick={listening ? stopListening : startListening}
+        style={{ width: "100%", padding: 18, borderRadius: 18, border: "none", background: listening ? "#b91c1c" : "black", color: "white", fontSize: 22 }}>
         {listening ? "⏹️ Durdur" : "🎤 Mikrofonu başlat"}
       </button>
 
-      <div
-        style={{
-          background: "white",
-          padding: 14,
-          borderRadius: 12,
-          marginBottom: 10,
-          minHeight: 60,
-        }}
-      >
-        <strong>Algılanan konuşma:</strong>
+      <div style={{ background: "white", padding: 16, borderRadius: 18, marginTop: 14 }}>
+        <b>Algılanan konuşma:</b>
         <p>{spokenText || "Henüz konuşma algılanmadı."}</p>
       </div>
 
-      <button
-        onClick={convertVoiceToList}
-        style={{
-          width: "100%",
-          padding: 15,
-          borderRadius: 12,
-          border: "none",
-          background: "#166534",
-          color: "white",
-          fontSize: 16,
-          marginBottom: 15,
-        }}
-      >
-        🧠 Konuşmayı listeye çevir
+      <button onClick={convertVoiceToList}
+        style={{ width: "100%", padding: 16, borderRadius: 18, border: "none", background: "#166534", color: "white", fontSize: 20, marginTop: 14 }}>
+        🧠 Ürün ürün listeye çevir
       </button>
 
-      <div style={{ display: "flex", gap: 8 }}>
-        <input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Ürün yaz..."
-          style={{
-            flex: 1,
-            padding: 14,
-            borderRadius: 10,
-            border: "1px solid #ccc",
-            fontSize: 16,
-          }}
-        />
-        <button
-          onClick={addManual}
-          style={{
-            padding: 14,
-            borderRadius: 10,
-            border: "none",
-            background: "black",
-            color: "white",
-          }}
-        >
+      <div style={{ display: "flex", gap: 8, marginTop: 18 }}>
+        <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Örn: Jumbo’dan süt ekmek patates"
+          style={{ flex: 1, padding: 14, borderRadius: 14, border: "1px solid #ccc", fontSize: 18 }} />
+        <button onClick={addManual} style={{ padding: 14, borderRadius: 14, border: "none", background: "black", color: "white" }}>
           Ekle
         </button>
       </div>
 
-      <p style={{ fontSize: 13, color: "#666" }}>
-        Örnek: “domates, süt, iki kilo patates, Jumbo’dan brood”
-      </p>
-
-      <div style={{ marginTop: 20 }}>
-        {items.length === 0 ? (
-          <p>Liste boş.</p>
-        ) : (
-          items.map((item) => (
-            <div
-              key={item.id}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                background: "white",
-                padding: 12,
-                borderRadius: 12,
-                marginBottom: 10,
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={item.done}
-                onChange={() => toggleItem(item.id)}
-              />
-
-              <span
-                style={{
-                  flex: 1,
-                  textDecoration: item.done ? "line-through" : "none",
-                }}
-              >
-                {item.name}
-              </span>
-
-              <button
-                onClick={() => deleteItem(item.id)}
-                style={{
-                  border: "none",
-                  background: "#eee",
-                  borderRadius: 8,
-                  padding: 8,
-                }}
-              >
-                Sil
-              </button>
+      <div style={{ marginTop: 22 }}>
+        {items.map((item) => (
+          <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 10, background: "white", padding: 14, borderRadius: 16, marginBottom: 10 }}>
+            <input type="checkbox" checked={item.done} onChange={() => toggleItem(item.id)} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 20, textDecoration: item.done ? "line-through" : "none" }}>{item.name}</div>
+              <small>{item.market}</small>
             </div>
-          ))
-        )}
+            <button onClick={() => deleteItem(item.id)} style={{ border: "none", background: "#eee", borderRadius: 10, padding: 10 }}>
+              Sil
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   );
